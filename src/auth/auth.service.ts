@@ -2,13 +2,23 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from './user.interface';
 import { CacheService } from '../ratelimit/cache.service';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
+
 
 @Injectable()
 export class AuthService {
+  private users: User[];
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly cacheService: CacheService
-  ) {}
+  ) {
+    // Carregar usuários do arquivo JSON
+    const usersFilePath = path.resolve(__dirname, '../../src/auth/users.json');
+    this.users = JSON.parse(fs.readFileSync(usersFilePath, 'utf-8'));
+  }
 
   async login(user: User) {
     const payload = { username: user.username, sub: user.userId };
@@ -20,21 +30,16 @@ export class AuthService {
     };
   }
 
-  async validateUser(username: string, pass: string): Promise<any> {
-    // Adicione a lógica de validação do usuário aqui
-    const user: User = { userId: 1, username: 'test', password: 'test' }; // Exemplo de usuário
-    if (user && user.username === username && user.password === pass) {
+  async validateUser(username: string, pass: string): Promise<User | null> {
+    // Criptografar a senha recebida usando MD5
+    const encryptedPassword = crypto.createHash('md5').update(pass).digest('hex');
+
+    // Encontrar o usuário no arquivo JSON
+    const user = this.users.find(u => u.username === username && u.password === encryptedPassword);
+    if (user) {
       const { password, ...result } = user;
       return result as User;
     }
     return null;
-  }
-
-  decodeToken(token: string): any {
-    try {
-      return this.jwtService.verify(token);
-    } catch (error) {
-      throw new Error('Invalid token');
-    }
   }
 }
