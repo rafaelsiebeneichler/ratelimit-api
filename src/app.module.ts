@@ -23,8 +23,9 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
       database: 'mydatabase',
       autoLoadModels: true,
       synchronize: true,
+      logging: false, // Desativar logs de consultas
       dialectOptions: {
-        statement_timeout: 10000, // Timeout de 10 segundos
+        statement_timeout: 15000, // Timeout de 15 segundos
       },
     }),
     MockDataModule,

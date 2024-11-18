@@ -26,6 +26,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/sequelize": "^10.0.1",
+    "axios": "^1.7.7",
     "nestjs-rate-limiter": "^3.1.0",
     "node-cache": "^5.1.2",
     "passport": "^0.7.0",

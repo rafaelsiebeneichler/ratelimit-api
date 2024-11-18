@@ -7,6 +7,7 @@ const accounts = [123456, 234567, 345678, 456789, 567890, 678901, 789012, 890123
 const ind_dc_values = ['D', 'C'];
 const startDate = new Date('2024-11-01');
 const endDate = new Date('2024-11-14');
+const ENDPOINT_URI = 'localhost:3000';
 
 function getRandomDate(start, end) {
   return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
@@ -33,77 +34,50 @@ const loginCache = {};
 
 export let options = {
   stages: [
-    { duration: '20s', target: 3000 }, // 10 usuários simultâneos em 30 segundos
-    // { duration: '1m', target: 20 },  // 20 usuários simultâneos em 1 minuto
-    // { duration: '30s', target: 0 },  // Reduza para 0 usuários em 30 segundos
+    { duration: '50s', target: 20000 }, // 100 usuários simultâneos em 1 minuto
+    // { duration: '1m', target: 3000 },  // 3000 usuários simultâneos em 1 minuto
+    // { duration: '1m', target: 100 },  // 100 usuários simultâneos em 1 minuto
   ],
 };
 
 export default function () {
-  // const token = getToken();
+   const token = null;
 
    // Gere valores randômicos para offset e limit
    const offset = Math.floor(Math.random() * 1000) + 0; // Offset de 0 até 1000
    const limit = Math.floor(Math.random() * 81) + 20; // Limit de 20 até 100
 
+   // Recupera uma conta aleatória
    const account = accounts[Math.floor(Math.random() * accounts.length)];
-   const description = `Transaction k6`;
-   const date = getRandomDate(startDate, endDate);
-   const ind_dc = ind_dc_values[Math.floor(Math.random() * ind_dc_values.length)];
-   const value = getRandomValue(0.01, 1000.00);
- 
-   const body = {
-     account: account,
-     description: description,
-     date: date,
-     ind_dc: ind_dc,
-     value: parseFloat(value),
-     createdAt: new Date(),
-     updatedAt: new Date()
-   };
 
    // Rota de listagem de registros
-  //  apiRequest(null, 'GET', `http://localhost:3000/mock-data?offset=${offset}&limit=${limit}`, {});
+   apiRequest(token, 'GET', `http://${ENDPOINT_URI}/mock-data?offset=${offset}&limit=${limit}`, {});
    // Rota de sumário de registros por conta e período
-  //  apiRequest(null, 'GET', `http://localhost:3000/mock-data/${account}/summary?period=month`, {});
+   apiRequest(token, 'GET', `http://${ENDPOINT_URI}/mock-data/${account}/summary?period=month`, {});
    // Inserir novo registro
-   apiRequest(null, 'POST', `http://localhost:3000/mock-data`, {}, body);
+   apiRequest(token, 'POST', `http://${ENDPOINT_URI}/mock-data`, {}, getRamdonBody(account));
    // Rota de sumário de registros por conta e período
-  //  apiRequest(null, 'GET', `http://localhost:3000/mock-data/${account}/summary?period=month`, {});
-//   sleep(1);
+   apiRequest(token, 'GET', `http://${ENDPOINT_URI}/mock-data/${account}/summary?period=month`, {});
+   sleep(0.5)
 }
 
-function getToken() {
-  const user = users[Math.floor(Math.random() * users.length)];
-  const cacheKey = `${user.username}`;
-  let token;
+function getRamdonBody(account) {
+  const description = `Transaction k6`;
+  const date = getRandomDate(startDate, endDate);
+  const ind_dc = ind_dc_values[Math.floor(Math.random() * ind_dc_values.length)];
+  const value = getRandomValue(0.01, 1000.00);
 
-  // Verifique se o token está no cache e ainda é válido
-  if (loginCache[cacheKey] && loginCache[cacheKey].expires > Date.now()) {
-    token = loginCache[cacheKey].token;
-  } else {
-    // Faça a requisição de login se o token não estiver no cache ou estiver expirado
-    const loginRes = http.post('http://localhost:3000/auth/login', JSON.stringify({
-      username: user.username,
-      password: user.password,
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+  const body = {
+    account: account,
+    description: description,
+    date: date,
+    ind_dc: ind_dc,
+    value: parseFloat(value),
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
 
-    check(loginRes, {
-      'login successful': (r) => r.status === 200,
-    });
-
-    token = loginRes.json('access_token');
-
-    // Armazene o token no cache com expiração de 60 segundos
-    loginCache[cacheKey] = {
-      token: token,
-      expires: Date.now() + 60000, // 60 segundos
-    };
-  }
-
-  return token;
+  return body;
 }
 
 function apiRequest(token, method, url, params = {}, body = null) {
@@ -125,18 +99,20 @@ function apiRequest(token, method, url, params = {}, body = null) {
     res = http.del(url, parameters);
   }
 
-  check(res, {
-    'status is 200': (r) => r.status === 200,
-    'status is 400': (r) => r.status === 400,
-    'status is 404': (r) => r.status === 404,
-    'status is 429': (r) => r.status === 429,
-    'status is 500': (r) => r.status === 500,
-  });
+  // check(res, {
+  //   'status is 200': (r) => r.status === 200,
+  //   'status is 201': (r) => r.status === 201,
+  //   'status is 400': (r) => r.status === 400,
+  //   'status is 404': (r) => r.status === 404,
+  //   'status is 408': (r) => r.status === 408,
+  //   'status is 429': (r) => r.status === 429,
+  //   'status is 500': (r) => r.status === 500,
+  // });
 
   const statusCode = res.status;
-  console.log(statusCode);
+  // console.log(statusCode);
 
-  if (statusCode === 200) {
+  if (statusCode === 200 || statusCode === 201) {
     successRequests.add(1);
   } else if (statusCode === 400) {
     badRequests.add(1);
@@ -144,10 +120,13 @@ function apiRequest(token, method, url, params = {}, body = null) {
     notFoundRequests.add(1);
   } else if (statusCode === 408) {
     timedOutRequests.add(1);
+    // console.log('timedout', url);
   } else if (statusCode === 429) {
     ratelimitedRequests.add(1);
   } else {
     faultyRequests.add(1);
+    // console.log('faulty', url);
+    console.error('faulty_request', res.error);
   }
 
   return res;

@@ -5,19 +5,18 @@ import { CacheService } from '../ratelimit/cache.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-
+import * as users from './users.json'; 
 
 @Injectable()
 export class AuthService {
-  private users: User[];
+  // private users: User[];
+  private users: User[] = users;
 
   constructor(
     private readonly jwtService: JwtService,
     private readonly cacheService: CacheService
   ) {
-    // Carregar usuários do arquivo JSON
-    const usersFilePath = path.resolve(__dirname, '../../src/auth/users.json');
-    this.users = JSON.parse(fs.readFileSync(usersFilePath, 'utf-8'));
+
   }
 
   async login(user: User) {

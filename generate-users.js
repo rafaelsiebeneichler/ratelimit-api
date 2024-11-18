@@ -16,7 +16,7 @@ for (let i = 1; i <= 3000; i++) {
   users.push({
     userId: i,
     username: username,
-    password: encryptedPassword,
+    password: password,
   });
 }
 
